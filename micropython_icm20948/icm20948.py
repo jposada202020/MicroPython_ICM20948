@@ -13,6 +13,18 @@ MicroPython Driver for the Accelerometer and Gyro ICM20948 Sensor
 
 """
 
+# pylint: disable=too-many-arguments, line-too-long, too-many-instance-attributes
+
+import time
+import math
+from micropython import const
+from micropython_icm20948.i2c_helpers import CBits, RegisterStruct
+
+try:
+    import struct
+except ImportError:
+    import ustruct as struct
+
 _REG_WHOAMI = const(0x69)
 _DEVICE_ID = const(0x00)
 
@@ -62,4 +74,3 @@ class ICM20948:
             raise RuntimeError("Failed to find the ICM20948 sensor!")
 
         print(bin(self._device_id), hex(self._device_id))
-
