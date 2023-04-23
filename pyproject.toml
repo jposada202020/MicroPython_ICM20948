@@ -38,7 +38,7 @@ classifiers = [
 dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.setuptools]
-packages = ["micropython_icm20948"]
+packages = ["icm20948"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
