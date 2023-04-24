@@ -35,6 +35,7 @@ _PWR_MGMT_1 = const(0x06)
 _PWR_MGMT_2 = const(0x07)
 _REG_BANK_SEL = const(0x7F)
 _ACCEL_CONFIG = const(0x14)
+_GYRO_CONFIG_1 = const(0x01)
 
 _ACCEL_XOUT_H = 0x2D  # first byte of accel data
 _GYRO_XOUT_H = 0x33  # first byte of accel data
@@ -47,10 +48,10 @@ CLK_SELECT_STOP = const(0b111)
 clk_values = (CLK_SELECT_INTERNAL, CLK_SELECT_BEST, CLK_SELECT_STOP)
 
 # ICM20948
-ACC_DISABLED = const(0b000)
-GYRO_DISABLED = const(0b000)
-ACC_ENABLED = const(0b111)
-GYRO_ENABLED = const(0b111)
+ACC_DISABLED = const(0b111)
+GYRO_DISABLED = const(0b111)
+ACC_ENABLED = const(0b000)
+GYRO_ENABLED = const(0b000)
 # End
 gyro_en_values = (GYRO_DISABLED, GYRO_ENABLED)
 acc_en_values = (ACC_DISABLED, ACC_ENABLED)
@@ -68,9 +69,17 @@ RANGE_2G = const(0b00)
 RANGE_4G = const(0b01)
 RANGE_8G = const(0b10)
 RANGE_16G = const(0b11)
-# End
+
 acc_range_values = (RANGE_2G, RANGE_4G, RANGE_8G, RANGE_16G)
 acc_range_sensitivity = (16384, 8192, 4096, 2048)
+
+# Gyro Full Scale
+FS_250_DPS = const(0b00)
+FS_500_DPS = const(0b01)
+FS_1000_DPS = const(0b10)
+FS_2000_DPS = const(0b11)
+gyro_full_scale_values = (FS_250_DPS, FS_500_DPS, FS_1000_DPS, FS_2000_DPS)
+gyro_full_scale_sensitivity = (131, 65.5, 32.8, 16.4)
 
 
 class ICM20948:
@@ -99,11 +108,12 @@ class ICM20948:
         i2c = I2C(sda=Pin(8), scl=Pin(9))
         icm = icm20948.ICM20948(i2c)
 
-    Now you have access to the :attr:`acceleration` attribute
+    Now you have access to the :attr:`acceleration` attribute and :attr:`gyro` attribute
 
     .. code-block:: python
 
         accx, accy, accz = icm.accelerometer
+        gyro = icm.gyro
 
     """
 
@@ -119,7 +129,7 @@ class ICM20948:
     _reset = CBits(1, _PWR_MGMT_1, 7)
 
     # Register PWR_MGMT_2 (0x07)
-    # | ---- | ---- |  DISABLE_ACCEL(2) | DISABLE_ACCEL(1) | DISABLE_ACCEL(0) | DISABLE_GYRO(2) | DISABLE_GYRO(1) | DISABLE_GYRO(0) |
+    # |----|----|DISABLE_ACCEL(2)|DISABLE_ACCEL(1)|DISABLE_ACCEL(0)|DISABLE_GYRO(2)|DISABLE_GYRO(1)|DISABLE_GYRO(0)|
     _gyro_enable = CBits(3, _PWR_MGMT_2, 0)
     _acc_enable = CBits(3, _PWR_MGMT_2, 3)
 
@@ -132,8 +142,12 @@ class ICM20948:
 
     # BANK 2
     # ACCEL_CONFIG (0x14)
-    # | ---- | ---- |  ACCEL_DLPFCFG(2) | ACCEL_DLPFCFG(1) | ACCEL_DLPFCFG(0) | ACCEL_FS_SEL[(1) | ACCEL_FS_SEL[(0) | ACCEL_FCHOICE |
+    # |----|----|ACCEL_DLPFCFG(2)|ACCEL_DLPFCFG(1)|ACCEL_DLPFCFG(0)|ACCEL_FS_SEL[(1)|ACCEL_FS_SEL[(0)|ACCEL_FCHOICE|
     _acc_data_range = CBits(2, _ACCEL_CONFIG, 1)
+
+    # _GYRO_CONFIG_1 (0x01)
+    # |----|----|GYRO_DLPFCFG(2)|GYRO_DLPFCFG(1)|GYRO_DLPFCFG(0)|GYRO_FS_SEL[(1)|GYRO_FS_SEL[(0)|GYRO_FCHOICE|
+    _gyro_full_scale = CBits(2, _GYRO_CONFIG_1, 1)
 
     def __init__(self, i2c, address=_REG_WHOAMI):
         self._i2c = i2c
@@ -153,10 +167,23 @@ class ICM20948:
     @property
     def clock_select(self):
         """
-        * CLK_SELECT_INTERNAL Internal 20 MHz oscillator
-        * CLK_SELECT_BEST Auto selects the best available clock source – PLL if ready, else use the Internal oscillator
-        * CLK_SELECT_STOP Stops the clock and keeps timing generator in reset
-        * NOTE CLKSEL should be set to ``CLK_SELECT_BEST`` to achieve full gyroscope performance.
+        CLK_SELECT_INTERNAL: Internal 20 MHz oscillator
+        CLK_SELECT_BEST: Auto selects the best available clock source – PLL if ready, else use the
+        Internal oscillator
+        CLK_SELECT_STOP: Stops the clock and keeps timing generator in reset
+        NOTE: CLKSEL should be set to ``CLK_SELECT_BEST`` to achieve full gyroscope performance.
+
+        +------------------------------------------+-------------------+
+        | Mode                                     | Value             |
+        +==========================================+===================+
+        | :py:const:`icm20948.CLK_SELECT_INTERNAL` | :py:const:`0b000` |
+        +------------------------------------------+-------------------+
+        | :py:const:`icm20948.CLK_SELECT_BEST`     | :py:const:`0b001` |
+        +------------------------------------------+-------------------+
+        | :py:const:`icm20948.CLK_SELECT_STOP`     | :py:const:`0b111` |
+        +------------------------------------------+-------------------+
+
+
         """
 
         values = {0: "CLK_SELECT_INTERNAL", 1: "CLK_SELECT_BEST", 7: "CLK_SELECT_STOP"}
@@ -171,23 +198,30 @@ class ICM20948:
     @property
     def reset(self):
         """
-        Reset the Sensor
+        Reset the internal registers and restores the default settings. Write a 1 to set the
+        reset, the bit will auto clear
         """
 
         return self._reset
 
     @reset.setter
     def reset(self, value=1):
-        """
-        Reset the Sensor
-        """
         self._reset = value
         sleep(0.1)
 
     @property
     def gyro_enabled(self):
         """
-        Enables the Gyro
+        Gyro Enabled
+
+        +------------------------------------+------------------------------------------------------+
+        | Mode                               | Value                                                |
+        +====================================+======================================================+
+        | :py:const:`icm20948.GYRO_ENABLED`  | :py:const:`0b000` Gyroscope (all axes) on            |
+        +------------------------------------+------------------------------------------------------+
+        | :py:const:`icm20948.GYRO_DISABLED` | :py:const:`0b111` Gyroscope (all axes) disabled      |
+        +------------------------------------+------------------------------------------------------+
+
         """
         values = {0: "GYRO_DISABLED", 7: "GYRO_ENABLED"}
         return values[self._gyro_enable]
@@ -201,7 +235,16 @@ class ICM20948:
     @property
     def acc_enabled(self):
         """
-        Enables the Accelerometer
+        Accelerometer enabled
+
+        +------------------------------------+------------------------------------------------------+
+        | Mode                               | Value                                                |
+        +====================================+======================================================+
+        | :py:const:`icm20948.ACC_ENABLED`   | :py:const:`0b000` Accelerometer (all axes) on        |
+        +------------------------------------+------------------------------------------------------+
+        | :py:const:`icm20948.ACC_DISABLED`  | :py:const:`0b111` Accelerometer (all axes) disabled  |
+        +------------------------------------+------------------------------------------------------+
+
         """
         values = {0: "ACC_DISABLED", 7: "ACC_ENABLED"}
         return values[self._acc_enable]
@@ -215,7 +258,8 @@ class ICM20948:
     @property
     def acceleration(self):
         """
-        Return the Sensor Acceleration
+        Acceleration Property
+        :return: Acceleration Values
         """
         raw_measurement = self._raw_accel_data
         sleep(0.005)
@@ -240,11 +284,28 @@ class ICM20948:
     @property
     def gyro(self):
         """
-        Gyro information
+        Gyro Property
+        :return: Gyros Values
         """
-        raw_gyro_data = self._raw_gyro_data
+        raw_measurement = self._raw_gyro_data
         sleep(0.005)
-        return raw_gyro_data
+        x = (
+            raw_measurement[0]
+            / gyro_full_scale_sensitivity[self._memory_gyro_fs]
+            * 0.017453293
+        )
+        y = (
+            raw_measurement[1]
+            / gyro_full_scale_sensitivity[self._memory_gyro_fs]
+            * 0.017453293
+        )
+        z = (
+            raw_measurement[2]
+            / gyro_full_scale_sensitivity[self._memory_gyro_fs]
+            * 0.017453293
+        )
+
+        return x, y, z
 
     @property
     def _power_bank(self):
@@ -258,7 +319,20 @@ class ICM20948:
     @property
     def accelerometer_range(self):
         """
-        Accelerometer Range
+        Sensor acceleration_range
+
+        +--------------------------------+------------------+
+        | Mode                           | Value            |
+        +================================+==================+
+        | :py:const:`icm20948.RANGE_2G`  | :py:const:`0b00` |
+        +--------------------------------+------------------+
+        | :py:const:`icm20948.RANGE_4G`  | :py:const:`0b01` |
+        +--------------------------------+------------------+
+        | :py:const:`icm20948.RANGE_8G`  | :py:const:`0b10` |
+        +--------------------------------+------------------+
+        | :py:const:`icm20948.RANGE_16G` | :py:const:`0b11` |
+        +--------------------------------+------------------+
+
         """
         values = ("RANGE_2G", "RANGE_4G", "RANGE_8G", "RANGE_16G")
         return values[self._memory_accel_range]
@@ -271,4 +345,34 @@ class ICM20948:
         self._acc_data_range = value
         sleep(0.005)
         self._memory_accel_range = value
+        self._bank = 0
+
+    @property
+    def gyro_full_scale(self):
+        """
+        Sensor gyro_full_scale
+
+        +----------------------------------+------------------+
+        | Mode                             | Value            |
+        +==================================+==================+
+        | :py:const:`icm20948.FS_250_DPS`  | :py:const:`0b00` |
+        +----------------------------------+------------------+
+        | :py:const:`icm20948.FS_500_DPS`  | :py:const:`0b01` |
+        +----------------------------------+------------------+
+        | :py:const:`icm20948.FS_1000_DPS` | :py:const:`0b10` |
+        +----------------------------------+------------------+
+        | :py:const:`icm20948.FS_2000_DPS` | :py:const:`0b11` |
+        +----------------------------------+------------------+
+        """
+        values = ("FS_250_DPS", "FS_500_DPS", "FS_1000_DPS", "FS_2000_DPS")
+        return values[self._memory_gyro_fs]
+
+    @gyro_full_scale.setter
+    def gyro_full_scale(self, value):
+        if value not in gyro_full_scale_values:
+            raise ValueError("Value must be a valid gyro_full_scale setting")
+        self._bank = 2
+        self._gyro_full_scale = value
+        sleep(0.005)
+        self._memory_gyro_fs = value
         self._bank = 0
