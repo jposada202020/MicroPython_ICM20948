@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2021 Kattni Rembor for Adafruit Industries
+# SPDX-FileCopyrightText: 2023 Jose D. Montoya
 #
 # SPDX-License-Identifier: Unlicense
 
-sphinx>=6.0.0
+sphinx-immaterial
