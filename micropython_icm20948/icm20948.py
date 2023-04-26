@@ -36,6 +36,8 @@ _PWR_MGMT_2 = const(0x07)
 _REG_BANK_SEL = const(0x7F)
 _ACCEL_CONFIG = const(0x14)
 _GYRO_CONFIG_1 = const(0x01)
+_GYRO_SMPLRT_DIV = const(0x00)
+_ACCEL_SMPLRT_DIV_1 = const(0x10)
 
 _ACCEL_XOUT_H = const(0x2D)  # first byte of accel data
 _GYRO_XOUT_H = const(0x33)  # first byte of accel data
@@ -77,6 +79,39 @@ RANGE_16G = const(0b11)
 acc_range_values = (RANGE_2G, RANGE_4G, RANGE_8G, RANGE_16G)
 acc_range_sensitivity = (16384, 8192, 4096, 2048)
 
+
+# Acceleration Rate Divisor Values
+acc_rate_values = {
+    140.6: 7,
+    102.3: 10,
+    70.3: 15,
+    48.9: 22,
+    35.2: 31,
+    17.6: 63,
+    8.8: 127,
+    4.4: 255,
+    2.2: 513,
+    1.1: 1022,
+    0.55: 2044,
+    0.27: 4095,
+}
+acc_data_rate_values = (
+    140.6,
+    102.3,
+    70.3,
+    48.9,
+    35.2,
+    17.6,
+    8.8,
+    4.4,
+    2.2,
+    1.1,
+    0.55,
+    0.27,
+)
+acc_rate_divisor_values = (7, 10, 15, 22, 31, 63, 127, 255, 513, 1022, 2044, 4095)
+
+
 # Gyro Full Scale
 FS_250_DPS = const(0b00)
 FS_500_DPS = const(0b01)
@@ -84,6 +119,45 @@ FS_1000_DPS = const(0b10)
 FS_2000_DPS = const(0b11)
 gyro_full_scale_values = (FS_250_DPS, FS_500_DPS, FS_1000_DPS, FS_2000_DPS)
 gyro_full_scale_sensitivity = (131, 65.5, 32.8, 16.4)
+
+# Gyro Rate Divisor Values
+gyro_rate_values = {
+    562.5: 1,
+    375.0: 2,
+    281.3: 3,
+    225.0: 4,
+    187.5: 5,
+    140.6: 7,
+    125.0: 8,
+    102.3: 10,
+    70.3: 15,
+    66.2: 16,
+    48.9: 22,
+    35.2: 31,
+    34.1: 32,
+    17.6: 63,
+    17.3: 64,
+    4.4: 255,
+}
+gyro_data_rate_values = (
+    562.5,
+    375.0,
+    281.3,
+    225.0,
+    187.5,
+    140.6,
+    125.0,
+    102.3,
+    70.3,
+    66.2,
+    48.9,
+    35.2,
+    34.1,
+    17.6,
+    17.3,
+    4.4,
+)
+gyro_rate_divisor_values = (1, 2, 3, 4, 5, 7, 8, 10, 15, 16, 22, 31, 32, 63, 64, 255)
 
 
 class ICM20948:
@@ -147,13 +221,18 @@ class ICM20948:
     _user_bank = CBits(2, _REG_BANK_SEL, 4)
 
     # BANK 2
+    _gyro_rate_divisor = RegisterStruct(_GYRO_SMPLRT_DIV, ">B")
+    _acc_rate_divisor = RegisterStruct(_ACCEL_SMPLRT_DIV_1, ">H")
+
     # ACCEL_CONFIG (0x14)
     # |----|----|ACCEL_DLPFCFG(2)|ACCEL_DLPFCFG(1)|ACCEL_DLPFCFG(0)|ACCEL_FS_SEL[(1)|ACCEL_FS_SEL[(0)|ACCEL_FCHOICE|
     _acc_data_range = CBits(2, _ACCEL_CONFIG, 1)
 
     # _GYRO_CONFIG_1 (0x01)
     # |----|----|GYRO_DLPFCFG(2)|GYRO_DLPFCFG(1)|GYRO_DLPFCFG(0)|GYRO_FS_SEL[(1)|GYRO_FS_SEL[(0)|GYRO_FCHOICE|
+    _gyro_choice = CBits(0, _GYRO_CONFIG_1, 0)
     _gyro_full_scale = CBits(2, _GYRO_CONFIG_1, 1)
+    _gyro_dplcfg = CBits(3, _GYRO_CONFIG_1, 3)
 
     def __init__(self, i2c, address=_REG_WHOAMI):
         self._i2c = i2c
@@ -167,6 +246,9 @@ class ICM20948:
         self._bank = 0
         self.accelerometer_range = RANGE_2G
         self.gyro_full_scale = FS_500_DPS
+
+        self.acc_data_rate_divisor = 22
+        self.gyro_data_rate_divisor = 10
 
     @property
     def clock_select(self):
@@ -408,6 +490,7 @@ class ICM20948:
         sleep(0.005)
         self._memory_gyro_fs = value
         self._user_bank = 0
+        sleep(0.1)
 
     @property
     def temperature(self):
@@ -417,3 +500,169 @@ class ICM20948:
 
         """
         return (self._raw_temp_data[3] / 333.87) + 21
+
+    @property
+    def gyro_data_rate(self):
+        """The rate at which gyro measurements are taken in Hz"""
+        return list(gyro_rate_values.keys())[
+            list(gyro_rate_values.values()).index(self.gyro_data_rate_divisor)
+        ]
+
+    @gyro_data_rate.setter
+    def gyro_data_rate(self, value):
+        """
+        .. note::
+
+            The data rates are set indirectly by setting a rate divisor according to the
+            following formula:
+
+            .. math::
+
+                \\text{gyro_data_rate } = \\frac{1125}{1 + divisor}
+
+        However, this library will accept only data rates specified in the following list to match the
+        right divisor.
+
+        Accepted values are:
+
+        | * 562.5
+        | * 375.0
+        | * 281.3
+        | * 225.0
+        | * 187.5
+        | * 140.6
+        | * 125.0
+        | * 102.3
+        | * 70.3
+        | * 66.2
+        | * 48.9
+        | * 35.2
+        | * 34.1
+        | * 17.6
+        | * 17.3
+        | * 4.4
+
+        """
+        if value not in gyro_data_rate_values:
+            raise ValueError("Gyro data rate must be a valid setting")
+
+        self.gyro_data_rate_divisor = gyro_rate_values[value]
+
+    @property
+    def gyro_data_rate_divisor(self):
+        """
+        Accepted values are:
+
+        | * 1
+        | * 2
+        | * 3
+        | * 4
+        | * 5
+        | * 7
+        | * 8
+        | * 10
+        | * 15
+        | * 16
+        | * 22
+        | * 31
+        | * 32
+        | * 63
+        | * 64
+        | * 255
+
+        """
+
+        self._user_bank = 2
+        raw_rate_divisor = self._gyro_rate_divisor
+        sleep(0.005)
+        self._user_bank = 0
+        return raw_rate_divisor
+
+    @gyro_data_rate_divisor.setter
+    def gyro_data_rate_divisor(self, value):
+        if value not in gyro_rate_divisor_values:
+            raise ValueError("Value must be a valid gyro data rate divisor setting")
+        self._user_bank = 2
+        sleep(0.005)
+        self._gyro_rate_divisor = value
+        sleep(0.005)
+
+    @property
+    def acc_data_rate(self):
+        """The rate at which accelerometer measurements are taken in Hz"""
+        return list(acc_rate_values.keys())[
+            list(acc_rate_values.values()).index(self.acc_data_rate_divisor)
+        ]
+
+    @acc_data_rate.setter
+    def acc_data_rate(self, value):
+        """
+        .. note::
+
+            The data rates are set indirectly by setting a rate divisor according to the
+            following formula:
+
+            .. math::
+
+                \\text{acc_data_rate } = \\frac{1125}{1 + divisor}
+
+        However, this library will accept only data rates specified in the following list to match the
+        right divisor.
+
+        Accepted values are:
+
+        | * 140.6
+        | * 102.3
+        | * 70.3
+        | * 48.9
+        | * 35.2
+        | * 17.6
+        | * 8.8
+        | * 4.4
+        | * 2.2
+        | * 1.1
+        | * 0.55
+        | * 0.27
+
+        """
+        if value not in acc_data_rate_values:
+            raise ValueError("Accelerometer data rate must be a valid setting")
+
+        self.acc_data_rate_divisor = acc_rate_values[value]
+
+    @property
+    def acc_data_rate_divisor(self):
+        """
+        Accepted values are:
+
+        | * 7
+        | * 10
+        | * 15
+        | * 22
+        | * 31
+        | * 63
+        | * 127
+        | * 255
+        | * 513
+        | * 1022
+        | * 2044
+        | * 4095
+
+        """
+
+        self._user_bank = 2
+        raw_rate_divisor = self._acc_rate_divisor
+        sleep(0.005)
+        self._user_bank = 0
+        return raw_rate_divisor
+
+    @acc_data_rate_divisor.setter
+    def acc_data_rate_divisor(self, value):
+        if value not in acc_rate_divisor_values:
+            raise ValueError(
+                "Value must be a valid acceleration data rate divisor setting"
+            )
+        self._user_bank = 2
+        sleep(0.005)
+        self._acc_rate_divisor = value
+        sleep(0.005)
