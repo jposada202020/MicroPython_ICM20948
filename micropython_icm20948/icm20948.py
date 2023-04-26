@@ -23,7 +23,7 @@ This library depends on Micropython
 
 from time import sleep
 from micropython import const
-from i2c_helpers import CBits, RegisterStruct
+from micropython_icm20948.i2c_helpers import CBits, RegisterStruct
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/jposada202020/MicroPython_ICM20948.git"
@@ -140,7 +140,7 @@ class ICM20948:
 
     _raw_accel_data = RegisterStruct(_ACCEL_XOUT_H, ">hhh")
     _raw_gyro_data = RegisterStruct(_GYRO_XOUT_H, ">hhh")
-    _raw_temp_data = RegisterStruct(_TEMP_OUT, ">h")
+    _raw_temp_data = RegisterStruct(_GYRO_XOUT_H, ">hhhh")
 
     # Register REG_BANK_SEL (0x7F)
     # | ---- | ---- |  USER_BANK(1) | USER_BANK(0) | ---- | ---- | ---- | ---- |
@@ -170,11 +170,8 @@ class ICM20948:
         # print("bank", self._bank)
         # print("accelerometer", self.accelerometer_range)
         print(self._raw_temp_data)
-        print(self.accelerometer_range)
-        print("temp enabled", self._temp_enabled)
-        print(self.acceleration)
 
-        print(self._raw_temp_data / 333)
+        # print(self._raw_temp_data/333)
 
     @property
     def clock_select(self):
@@ -347,7 +344,7 @@ class ICM20948:
     @property
     def power_bank(self):
         """
-        Returns the current power bank
+        Power bank selected
         """
         return self._user_bank
 
@@ -420,7 +417,8 @@ class ICM20948:
     @property
     def temperature(self):
         """
-        Temperature Value. This did not work with the sensor that I have
+        Temperature Value. In the setup tested, there is the need to read either the values from acceleration,
+        gyro and temperature or gyro and temperature at the same time in order to have a logic temperature value.
 
         """
-        return (self._raw_temp_data / 333) + 21
+        return (self._raw_temp_data[3] / 333.87) + 21
