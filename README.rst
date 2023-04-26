@@ -11,6 +11,9 @@ Introduction
     :target: https://pypi.python.org/pypi/micropython-icm20948
     :alt: PyPi Package
 
+.. image:: https://static.pepy.tech/personalized-badge/micropython-icm20948?period=total&units=international_system&left_color=grey&right_color=blue&left_text=Pypi%20Downloads
+    :alt: Total PyPI downloads
+    :target: https://pepy.tech/project/circuitpython-bmp180
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
