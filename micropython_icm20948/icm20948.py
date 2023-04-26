@@ -23,7 +23,7 @@ This library depends on Micropython
 
 from time import sleep
 from micropython import const
-from micropython_icm20948.i2c_helpers import CBits, RegisterStruct
+from i2c_helpers import CBits, RegisterStruct
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/jposada202020/MicroPython_ICM20948.git"
@@ -62,7 +62,7 @@ gyro_en_values = (GYRO_DISABLED, GYRO_ENABLED)
 acc_en_values = (ACC_DISABLED, ACC_ENABLED)
 temperature_en_values = (TEMP_DISABLED, TEMP_ENABLED)
 
-# ICM20948
+# ICM20948 USer Bank
 USER_BANK_0 = const(0)
 USER_BANK_1 = const(1)
 USER_BANK_2 = const(2)
@@ -70,7 +70,7 @@ USER_BANK_3 = const(3)
 # End
 user_bank_values = (USER_BANK_0, USER_BANK_1, USER_BANK_2, USER_BANK_3)
 
-# ICM20948
+# User Bank ICM20948
 RANGE_2G = const(0b00)
 RANGE_4G = const(0b01)
 RANGE_8G = const(0b10)
@@ -78,7 +78,6 @@ RANGE_16G = const(0b11)
 
 acc_range_values = (RANGE_2G, RANGE_4G, RANGE_8G, RANGE_16G)
 acc_range_sensitivity = (16384, 8192, 4096, 2048)
-
 
 # Acceleration Rate Divisor Values
 acc_rate_values = {
@@ -110,6 +109,23 @@ acc_data_rate_values = (
     0.27,
 )
 acc_rate_divisor_values = (7, 10, 15, 22, 31, 63, 127, 255, 513, 1022, 2044, 4095)
+
+FREQ_246_0 = const(0b001)
+FREQ_111_4 = const(0b010)
+FREQ_50_4 = const(0b011)
+FREQ_23_9 = const(0b100)
+FREQ_11_5 = const(0b101)
+FREQ_5_7 = const(0b110)
+FREQ_473 = const(0b111)
+acc_filter_values = (
+    FREQ_246_0,
+    FREQ_111_4,
+    FREQ_50_4,
+    FREQ_23_9,
+    FREQ_11_5,
+    FREQ_5_7,
+    FREQ_473,
+)
 
 
 # Gyro Full Scale
@@ -158,6 +174,25 @@ gyro_data_rate_values = (
     4.4,
 )
 gyro_rate_divisor_values = (1, 2, 3, 4, 5, 7, 8, 10, 15, 16, 22, 31, 32, 63, 64, 255)
+
+G_FREQ_196_6 = const(0b000)
+G_FREQ_151_8 = const(0b001)
+G_FREQ_119_5 = const(0b010)
+G_FREQ_51_2 = const(0b011)
+G_FREQ_23_9 = const(0b100)
+G_FREQ_11_6 = const(0b101)
+G_FREQ_5_7 = const(0b110)
+G_FREQ_361_4 = const(0b111)
+gyro_filter_values = (
+    G_FREQ_196_6,
+    G_FREQ_151_8,
+    G_FREQ_119_5,
+    G_FREQ_51_2,
+    G_FREQ_23_9,
+    G_FREQ_11_6,
+    G_FREQ_5_7,
+    G_FREQ_361_4,
+)
 
 
 class ICM20948:
@@ -226,7 +261,9 @@ class ICM20948:
 
     # ACCEL_CONFIG (0x14)
     # |----|----|ACCEL_DLPFCFG(2)|ACCEL_DLPFCFG(1)|ACCEL_DLPFCFG(0)|ACCEL_FS_SEL[(1)|ACCEL_FS_SEL[(0)|ACCEL_FCHOICE|
+    _acc_choice = CBits(1, _ACCEL_CONFIG, 0)
     _acc_data_range = CBits(2, _ACCEL_CONFIG, 1)
+    _acc_dplcfg = CBits(3, _ACCEL_CONFIG, 3)
 
     # _GYRO_CONFIG_1 (0x01)
     # |----|----|GYRO_DLPFCFG(2)|GYRO_DLPFCFG(1)|GYRO_DLPFCFG(0)|GYRO_FS_SEL[(1)|GYRO_FS_SEL[(0)|GYRO_FCHOICE|
@@ -248,7 +285,9 @@ class ICM20948:
         self.gyro_full_scale = FS_500_DPS
 
         self.acc_data_rate_divisor = 22
+        print("ACC Data rate Divisor", self.acc_data_rate_divisor)
         self.gyro_data_rate_divisor = 10
+        print("ACC data rate", self.acc_data_rate)
 
     @property
     def clock_select(self):
@@ -666,3 +705,91 @@ class ICM20948:
         sleep(0.005)
         self._acc_rate_divisor = value
         sleep(0.005)
+
+    @property
+    def acc_dlpf_cutoff(self):
+        """The cutoff frequency for the accelerometer's digital low pass filter. Signals
+        above the given frequency will be filtered out.
+
+        .. note::
+            Readings immediately following setting a cutoff frequency will be
+            inaccurate due to the filter "warming up"
+
+        """
+
+        self._user_bank = 2
+        sleep(0.005)
+        raw_value = self._acc_dplcfg
+        self._user_bank = 0
+        return raw_value
+
+    @acc_dlpf_cutoff.setter
+    def acc_dlpf_cutoff(self, value):
+        if value not in acc_filter_values:
+            raise ValueError("Value must be a valid dlpf setting")
+        self._user_bank = 2
+        sleep(0.005)
+        self._acc_dplcfg = value
+        self._user_bank = 0
+        sleep(0.005)
+
+    @property
+    def acc_filter_choice(self):
+        """Enables accelerometer DLPF"""
+        self._user_bank = 2
+        sleep(0.005)
+        raw_value = self._acc_choice
+        self._user_bank = 0
+        return raw_value
+
+    @acc_filter_choice.setter
+    def acc_filter_choice(self, value):
+        self._user_bank = 2
+        sleep(0.005)
+        self._acc_choice = value
+        self._user_bank = 0
+        sleep(0.05)
+
+    @property
+    def gyro_dlpf_cutoff(self):
+        """The cutoff frequency for the gyro's digital low pass filter. Signals
+        above the given frequency will be filtered out.
+
+        .. note::
+            Readings immediately following setting a cutoff frequency will be
+            inaccurate due to the filter "warming up"
+
+        """
+
+        self._user_bank = 2
+        sleep(0.005)
+        raw_value = self._gyro_dplcfg
+        self._user_bank = 0
+        return raw_value
+
+    @gyro_dlpf_cutoff.setter
+    def gyro_dlpf_cutoff(self, value):
+        if value not in gyro_filter_values:
+            raise ValueError("Value must be a valid dlpf setting")
+        self._user_bank = 2
+        sleep(0.005)
+        self._gyro_dplcfg = value
+        self._user_bank = 0
+        sleep(0.005)
+
+    @property
+    def gyro_filter_choice(self):
+        """Enables gyro DLPF"""
+        self._user_bank = 2
+        sleep(0.005)
+        raw_value = self._gyro_choice
+        self._user_bank = 0
+        return raw_value
+
+    @gyro_filter_choice.setter
+    def gyro_filter_choice(self, value):
+        self._user_bank = 2
+        sleep(0.005)
+        self._gyro_choice = value
+        self._user_bank = 0
+        sleep(0.05)
