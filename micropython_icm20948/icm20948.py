@@ -167,11 +167,6 @@ class ICM20948:
         self._bank = 0
         self.accelerometer_range = RANGE_2G
         self.gyro_full_scale = FS_500_DPS
-        # print("bank", self._bank)
-        # print("accelerometer", self.accelerometer_range)
-        print(self._raw_temp_data)
-
-        # print(self._raw_temp_data/333)
 
     @property
     def clock_select(self):
