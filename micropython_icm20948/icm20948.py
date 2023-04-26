@@ -23,7 +23,7 @@ This library depends on Micropython
 
 from time import sleep
 from micropython import const
-from micropython_icm20948.i2c_helpers import CBits, RegisterStruct
+from i2c_helpers import CBits, RegisterStruct
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/jposada202020/MicroPython_ICM20948.git"
@@ -37,8 +37,9 @@ _REG_BANK_SEL = const(0x7F)
 _ACCEL_CONFIG = const(0x14)
 _GYRO_CONFIG_1 = const(0x01)
 
-_ACCEL_XOUT_H = 0x2D  # first byte of accel data
-_GYRO_XOUT_H = 0x33  # first byte of accel data
+_ACCEL_XOUT_H = const(0x2D)  # first byte of accel data
+_GYRO_XOUT_H = const(0x33)  # first byte of accel data
+_TEMP_OUT = const(0x3A)
 
 # ICM20948
 CLK_SELECT_INTERNAL = const(0b000)
@@ -52,9 +53,12 @@ ACC_DISABLED = const(0b111)
 GYRO_DISABLED = const(0b111)
 ACC_ENABLED = const(0b000)
 GYRO_ENABLED = const(0b000)
+TEMP_ENABLED = const(0b0)
+TEMP_DISABLED = const(0b1)
 # End
 gyro_en_values = (GYRO_DISABLED, GYRO_ENABLED)
 acc_en_values = (ACC_DISABLED, ACC_ENABLED)
+temperature_en_values = (TEMP_DISABLED, TEMP_ENABLED)
 
 # ICM20948
 USER_BANK_0 = const(0)
@@ -123,8 +127,9 @@ class ICM20948:
     _pwr_mgt_2 = RegisterStruct(_PWR_MGMT_2, "B")
 
     # Register PWR_MGMT_1 (0x06)
-    # | DEVICE RESET | SLEEP |  TMP_RDY | PRS_RDY | ---- | CLKSEL(2) | CLKSEL(1) | CLKSEL(0) |
+    # | DEVICE RESET | SLEEP |  LP_EN | ---- | TEMP_DIS | CLKSEL(2) | CLKSEL(1) | CLKSEL(0) |
     _clock_select = CBits(3, _PWR_MGMT_1, 0)
+    _temp_enabled = CBits(1, _PWR_MGMT_1, 3)
     _sleep = CBits(1, _PWR_MGMT_1, 6)
     _reset = CBits(1, _PWR_MGMT_1, 7)
 
@@ -135,6 +140,7 @@ class ICM20948:
 
     _raw_accel_data = RegisterStruct(_ACCEL_XOUT_H, ">hhh")
     _raw_gyro_data = RegisterStruct(_GYRO_XOUT_H, ">hhh")
+    _raw_temp_data = RegisterStruct(_TEMP_OUT, ">h")
 
     # Register REG_BANK_SEL (0x7F)
     # | ---- | ---- |  USER_BANK(1) | USER_BANK(0) | ---- | ---- | ---- | ---- |
@@ -160,9 +166,15 @@ class ICM20948:
         self._sleep = 0
         self._bank = 0
         self.accelerometer_range = RANGE_2G
+        self.gyro_full_scale = FS_500_DPS
         # print("bank", self._bank)
         # print("accelerometer", self.accelerometer_range)
-        # print(self.acceleration)
+        print(self._raw_temp_data)
+        print(self.accelerometer_range)
+        print("temp enabled", self._temp_enabled)
+        print(self.acceleration)
+
+        print(self._raw_temp_data / 333)
 
     @property
     def clock_select(self):
@@ -207,7 +219,7 @@ class ICM20948:
     @reset.setter
     def reset(self, value=1):
         self._reset = value
-        sleep(0.1)
+        sleep(1)
 
     @property
     def gyro_enabled(self):
@@ -256,9 +268,33 @@ class ICM20948:
         self._acc_enable = value
 
     @property
+    def temperature_enabled(self):
+        """
+        Temperature Enabled. When set to 1, this bit disables the temperature sensor.
+
+        +------------------------------------+------------------------------------------------------+
+        | Mode                               | Value                                                |
+        +====================================+======================================================+
+        | :py:const:`icm20948.TEMP_ENABLED`  | :py:const:`0b0` Temperature on                       |
+        +------------------------------------+------------------------------------------------------+
+        | :py:const:`icm20948.TEMP_DISABLED` | :py:const:`0b1` Temperature disabled                 |
+        +------------------------------------+------------------------------------------------------+
+
+        """
+        values = {0: "TEMP_DISABLED", 1: "TEMP_ENABLED"}
+        return values[self._temp_enabled]
+
+    @temperature_enabled.setter
+    def temperature_enabled(self, value):
+        if value not in temperature_en_values:
+            raise ValueError("Value must be a valid Temperature Enabled setting")
+        self._temp_enabled = value
+
+    @property
     def acceleration(self):
         """
-        Acceleration Property
+        Acceleration Property. The x, y, z acceleration values returned in a 3-tuple
+        and are in :math:`m / s ^ 2.`
         :return: Acceleration Values
         """
         raw_measurement = self._raw_accel_data
@@ -284,8 +320,9 @@ class ICM20948:
     @property
     def gyro(self):
         """
-        Gyro Property
-        :return: Gyros Values
+        Gyro Property. The x, y, z angular velocity values returned in a 3-tuple and
+        are in :math:`degrees / second`
+        :return: Angular velocity Values
         """
         raw_measurement = self._raw_gyro_data
         sleep(0.005)
@@ -308,12 +345,15 @@ class ICM20948:
         return x, y, z
 
     @property
-    def _power_bank(self):
-        return self._power_bank
+    def power_bank(self):
+        """
+        Returns the current power bank
+        """
+        return self._user_bank
 
-    @_power_bank.setter
-    def _power_bank(self, value):
-        self._power_bank = value
+    @power_bank.setter
+    def power_bank(self, value):
+        self._user_bank = value
         sleep(0.005)
 
     @property
@@ -341,11 +381,11 @@ class ICM20948:
     def accelerometer_range(self, value):
         if value not in acc_range_values:
             raise ValueError("Value must be a valid Accelerometer Range Setting")
-        self._bank = 2
+        self._user_bank = 2
         self._acc_data_range = value
         sleep(0.005)
         self._memory_accel_range = value
-        self._bank = 0
+        self._user_bank = 0
 
     @property
     def gyro_full_scale(self):
@@ -371,8 +411,16 @@ class ICM20948:
     def gyro_full_scale(self, value):
         if value not in gyro_full_scale_values:
             raise ValueError("Value must be a valid gyro_full_scale setting")
-        self._bank = 2
+        self._user_bank = 2
         self._gyro_full_scale = value
         sleep(0.005)
         self._memory_gyro_fs = value
-        self._bank = 0
+        self._user_bank = 0
+
+    @property
+    def temperature(self):
+        """
+        Temperature Value. This did not work with the sensor that I have
+
+        """
+        return (self._raw_temp_data / 333) + 21
