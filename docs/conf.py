@@ -21,7 +21,7 @@ extensions = [
     "sphinx_immaterial",
 ]
 
-autoclass_content = "both"
+autodoc_preserve_defaults = True
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
