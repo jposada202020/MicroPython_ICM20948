@@ -22,7 +22,7 @@ extensions = [
 ]
 
 autodoc_preserve_defaults = True
-autoclass_content = both
+autoclass_content = "both"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
