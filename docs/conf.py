@@ -21,7 +21,6 @@ extensions = [
     "sphinx_immaterial",
 ]
 
-autodoc_preserve_defaults = True
 autoclass_content = "both"
 
 intersphinx_mapping = {
