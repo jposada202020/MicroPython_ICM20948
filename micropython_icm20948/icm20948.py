@@ -285,9 +285,7 @@ class ICM20948:
         self.gyro_full_scale = FS_500_DPS
 
         self.acc_data_rate_divisor = 22
-        print("ACC Data rate Divisor", self.acc_data_rate_divisor)
         self.gyro_data_rate_divisor = 10
-        print("ACC data rate", self.acc_data_rate)
 
     @property
     def clock_select(self):
