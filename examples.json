@@ -1,0 +1,6 @@
+{
+  "urls": [
+    ["micropython_icm20948/examples/icm20948_simpletest.py", "github:jposada202020/MicroPython_ICM20948/examples/icm20948_simpletest.py"]
+  ],
+  "version": "0.1"
+}
