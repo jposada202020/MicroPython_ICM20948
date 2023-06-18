@@ -218,7 +218,7 @@ class ICM20948:
 
     .. code-block:: python
 
-        i2c = I2C(sda=Pin(8), scl=Pin(9))
+        i2c = I2C(1, sda=Pin(2), scl=Pin(3))
         icm = icm20948.ICM20948(i2c)
 
     Now you have access to the :attr:`acceleration` attribute and :attr:`gyro` attribute
