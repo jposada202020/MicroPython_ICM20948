@@ -10,6 +10,23 @@ import datetime
 
 sys.path.insert(0, os.path.abspath(".."))
 
+try:
+    # Inject mock modules so that we can build the
+    # documentation without having the real stuff available
+    from mock import Mock
+
+    to_be_mocked = [
+        "micropython",
+        "machine",
+    ]
+    for module in to_be_mocked:
+        sys.modules[module] = Mock()
+        print("Mocked '{}' module".format(module))
+
+    import micropython_icm20948
+except ImportError:
+    raise SystemExit("micropython_icm20948 has to be importable")
+
 # -- General configuration ------------------------------------------------
 
 extensions = [
