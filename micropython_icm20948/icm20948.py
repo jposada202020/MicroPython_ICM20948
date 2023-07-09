@@ -25,6 +25,11 @@ from time import sleep
 from micropython import const
 from micropython_icm20948.i2c_helpers import CBits, RegisterStruct
 
+try:
+    from typing import Tuple
+except ImportError:
+    pass
+
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/jposada202020/MicroPython_ICM20948.git"
 
@@ -321,7 +326,7 @@ class ICM20948:
         self._clock_select = value
 
     @property
-    def reset(self):
+    def reset(self) -> int:
         """
         Reset the internal registers and restores the default settings. Write a 1 to set the
         reset, the bit will auto clear
@@ -330,12 +335,12 @@ class ICM20948:
         return self._reset
 
     @reset.setter
-    def reset(self, value=1):
+    def reset(self, value=1) -> None:
         self._reset = value
         sleep(1)
 
     @property
-    def gyro_enabled(self):
+    def gyro_enabled(self) -> str:
         """
         Gyro Enabled
 
@@ -352,13 +357,13 @@ class ICM20948:
         return values[self._gyro_enable]
 
     @gyro_enabled.setter
-    def gyro_enabled(self, value):
+    def gyro_enabled(self, value: int) -> None:
         if value not in gyro_en_values:
             raise ValueError("Value must be a valid Gyro Enabled setting")
         self._gyro_enable = value
 
     @property
-    def acc_enabled(self):
+    def acc_enabled(self) -> str:
         """
         Accelerometer enabled
 
@@ -375,13 +380,13 @@ class ICM20948:
         return values[self._acc_enable]
 
     @acc_enabled.setter
-    def acc_enabled(self, value):
+    def acc_enabled(self, value: int) -> None:
         if value not in acc_en_values:
             raise ValueError("Value must be a valid Accelerometer Enabled setting")
         self._acc_enable = value
 
     @property
-    def temperature_enabled(self):
+    def temperature_enabled(self) -> str:
         """
         Temperature Enabled. When set to 1, this bit disables the temperature sensor.
 
@@ -394,17 +399,17 @@ class ICM20948:
         +------------------------------------+------------------------------------------------------+
 
         """
-        values = {0: "TEMP_DISABLED", 1: "TEMP_ENABLED"}
+        values = ("TEMP_DISABLED", "TEMP_ENABLED")
         return values[self._temp_enabled]
 
     @temperature_enabled.setter
-    def temperature_enabled(self, value):
+    def temperature_enabled(self, value: int) -> None:
         if value not in temperature_en_values:
             raise ValueError("Value must be a valid Temperature Enabled setting")
         self._temp_enabled = value
 
     @property
-    def acceleration(self):
+    def acceleration(self) -> Tuple[float, float, float]:
         """
         Acceleration Property. The x, y, z acceleration values returned in a 3-tuple
         and are in :math:`m / s ^ 2.`
@@ -431,7 +436,7 @@ class ICM20948:
         return x, y, z
 
     @property
-    def gyro(self):
+    def gyro(self) -> Tuple[float, float, float]:
         """
         Gyro Property. The x, y, z angular velocity values returned in a 3-tuple and
         are in :math:`degrees / second`
@@ -458,19 +463,19 @@ class ICM20948:
         return x, y, z
 
     @property
-    def power_bank(self):
+    def power_bank(self) -> int:
         """
         Power bank selected
         """
         return self._user_bank
 
     @power_bank.setter
-    def power_bank(self, value):
+    def power_bank(self, value: int) -> None:
         self._user_bank = value
         sleep(0.005)
 
     @property
-    def accelerometer_range(self):
+    def accelerometer_range(self) -> str:
         """
         Sensor acceleration_range
 
@@ -491,7 +496,7 @@ class ICM20948:
         return values[self._memory_accel_range]
 
     @accelerometer_range.setter
-    def accelerometer_range(self, value):
+    def accelerometer_range(self, value: int) -> None:
         if value not in acc_range_values:
             raise ValueError("Value must be a valid Accelerometer Range Setting")
         self._user_bank = 2
@@ -501,7 +506,7 @@ class ICM20948:
         self._user_bank = 0
 
     @property
-    def gyro_full_scale(self):
+    def gyro_full_scale(self) -> str:
         """
         Sensor gyro_full_scale
 
@@ -521,7 +526,7 @@ class ICM20948:
         return values[self._memory_gyro_fs]
 
     @gyro_full_scale.setter
-    def gyro_full_scale(self, value):
+    def gyro_full_scale(self, value: int) -> None:
         if value not in gyro_full_scale_values:
             raise ValueError("Value must be a valid gyro_full_scale setting")
         self._user_bank = 2
@@ -532,7 +537,7 @@ class ICM20948:
         sleep(0.1)
 
     @property
-    def temperature(self):
+    def temperature(self) -> float:
         """
         Temperature Value. In the setup tested, there is the need to read either the values from acceleration,
         gyro and temperature or gyro and temperature at the same time in order to have a logic temperature value.
@@ -548,7 +553,7 @@ class ICM20948:
         ]
 
     @gyro_data_rate.setter
-    def gyro_data_rate(self, value):
+    def gyro_data_rate(self, value: int) -> None:
         """
         .. note::
 
@@ -588,7 +593,7 @@ class ICM20948:
         self.gyro_data_rate_divisor = gyro_rate_values[value]
 
     @property
-    def gyro_data_rate_divisor(self):
+    def gyro_data_rate_divisor(self) -> int:
         """
         Accepted values are:
 
@@ -618,7 +623,7 @@ class ICM20948:
         return raw_rate_divisor
 
     @gyro_data_rate_divisor.setter
-    def gyro_data_rate_divisor(self, value):
+    def gyro_data_rate_divisor(self, value: int) -> None:
         if value not in gyro_rate_divisor_values:
             raise ValueError("Value must be a valid gyro data rate divisor setting")
         self._user_bank = 2
@@ -634,7 +639,7 @@ class ICM20948:
         ]
 
     @acc_data_rate.setter
-    def acc_data_rate(self, value):
+    def acc_data_rate(self, value: int) -> None:
         """
         .. note::
 
@@ -670,7 +675,7 @@ class ICM20948:
         self.acc_data_rate_divisor = acc_rate_values[value]
 
     @property
-    def acc_data_rate_divisor(self):
+    def acc_data_rate_divisor(self) -> int:
         """
         Accepted values are:
 
@@ -696,7 +701,7 @@ class ICM20948:
         return raw_rate_divisor
 
     @acc_data_rate_divisor.setter
-    def acc_data_rate_divisor(self, value):
+    def acc_data_rate_divisor(self, value: int) -> None:
         if value not in acc_rate_divisor_values:
             raise ValueError(
                 "Value must be a valid acceleration data rate divisor setting"
@@ -707,7 +712,7 @@ class ICM20948:
         sleep(0.005)
 
     @property
-    def acc_dlpf_cutoff(self):
+    def acc_dlpf_cutoff(self) -> int:
         """The cutoff frequency for the accelerometer's digital low pass filter. Signals
         above the given frequency will be filtered out.
 
@@ -724,7 +729,7 @@ class ICM20948:
         return raw_value
 
     @acc_dlpf_cutoff.setter
-    def acc_dlpf_cutoff(self, value):
+    def acc_dlpf_cutoff(self, value: int) -> None:
         if value not in acc_filter_values:
             raise ValueError("Value must be a valid dlpf setting")
         self._user_bank = 2
@@ -734,7 +739,7 @@ class ICM20948:
         sleep(0.005)
 
     @property
-    def acc_filter_choice(self):
+    def acc_filter_choice(self) -> int:
         """Enables accelerometer DLPF"""
         self._user_bank = 2
         sleep(0.005)
@@ -743,7 +748,7 @@ class ICM20948:
         return raw_value
 
     @acc_filter_choice.setter
-    def acc_filter_choice(self, value):
+    def acc_filter_choice(self, value: int) -> None:
         self._user_bank = 2
         sleep(0.005)
         self._acc_choice = value
@@ -751,7 +756,7 @@ class ICM20948:
         sleep(0.05)
 
     @property
-    def gyro_dlpf_cutoff(self):
+    def gyro_dlpf_cutoff(self) -> int:
         """The cutoff frequency for the gyro's digital low pass filter. Signals
         above the given frequency will be filtered out.
 
@@ -768,7 +773,7 @@ class ICM20948:
         return raw_value
 
     @gyro_dlpf_cutoff.setter
-    def gyro_dlpf_cutoff(self, value):
+    def gyro_dlpf_cutoff(self, value: int) -> None:
         if value not in gyro_filter_values:
             raise ValueError("Value must be a valid dlpf setting")
         self._user_bank = 2
@@ -778,7 +783,7 @@ class ICM20948:
         sleep(0.005)
 
     @property
-    def gyro_filter_choice(self):
+    def gyro_filter_choice(self) -> int:
         """Enables gyro DLPF"""
         self._user_bank = 2
         sleep(0.005)
@@ -787,7 +792,7 @@ class ICM20948:
         return raw_value
 
     @gyro_filter_choice.setter
-    def gyro_filter_choice(self, value):
+    def gyro_filter_choice(self, value: int) -> None:
         self._user_bank = 2
         sleep(0.005)
         self._gyro_choice = value
