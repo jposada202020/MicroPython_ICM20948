@@ -1,8 +1,17 @@
 {
   "urls": [
-    ["micropython_icm20948/icm20948.py", "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/icm20948.py"],
-    ["micropython_icm20948/i2c_helpers.py", "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/i2c_helpers.py"],
-    ["micropython_icm20948/__init__.py", "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/__init__.py"]
+    [
+      "micropython_icm20948/icm20948.py",
+      "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/icm20948.py"
+    ],
+    [
+      "micropython_icm20948/i2c_helpers.py",
+      "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/i2c_helpers.py"
+    ],
+    [
+      "micropython_icm20948/__init__.py",
+      "github:jposada202020/MicroPython_ICM20948/micropython_icm20948/__init__.py"
+    ]
   ],
-  "version": "0.1"
+  "version": "1"
 }

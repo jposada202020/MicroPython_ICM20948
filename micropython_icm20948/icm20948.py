@@ -19,7 +19,7 @@ This library depends on Micropython
 
 """
 
-# pylint: disable=too-many-arguments, line-too-long, too-many-instance-attributes
+# pylint: disable=line-too-long
 
 from time import sleep
 from micropython import const
@@ -52,7 +52,6 @@ _TEMP_OUT = const(0x3A)
 CLK_SELECT_INTERNAL = const(0b000)
 CLK_SELECT_BEST = const(0b001)
 CLK_SELECT_STOP = const(0b111)
-# End
 clk_values = (CLK_SELECT_INTERNAL, CLK_SELECT_BEST, CLK_SELECT_STOP)
 
 # ICM20948
@@ -62,7 +61,6 @@ ACC_ENABLED = const(0b000)
 GYRO_ENABLED = const(0b000)
 TEMP_ENABLED = const(0b0)
 TEMP_DISABLED = const(0b1)
-# End
 gyro_en_values = (GYRO_DISABLED, GYRO_ENABLED)
 acc_en_values = (ACC_DISABLED, ACC_ENABLED)
 temperature_en_values = (TEMP_DISABLED, TEMP_ENABLED)
@@ -72,15 +70,13 @@ USER_BANK_0 = const(0)
 USER_BANK_1 = const(1)
 USER_BANK_2 = const(2)
 USER_BANK_3 = const(3)
-# End
 user_bank_values = (USER_BANK_0, USER_BANK_1, USER_BANK_2, USER_BANK_3)
 
-# User Bank ICM20948
+# ACC Range ICM20948
 RANGE_2G = const(0b00)
 RANGE_4G = const(0b01)
 RANGE_8G = const(0b10)
 RANGE_16G = const(0b11)
-
 acc_range_values = (RANGE_2G, RANGE_4G, RANGE_8G, RANGE_16G)
 acc_range_sensitivity = (16384, 8192, 4096, 2048)
 
@@ -276,7 +272,7 @@ class ICM20948:
     _gyro_full_scale = CBits(2, _GYRO_CONFIG_1, 1)
     _gyro_dplcfg = CBits(3, _GYRO_CONFIG_1, 3)
 
-    def __init__(self, i2c, address=_REG_WHOAMI):
+    def __init__(self, i2c, address=0x69):
         self._i2c = i2c
         self._address = address
 
@@ -298,10 +294,11 @@ class ICM20948:
     def clock_select(self):
         """
         CLK_SELECT_INTERNAL: Internal 20 MHz oscillator
-        CLK_SELECT_BEST: Auto selects the best available clock source – PLL if ready, else use the
-        Internal oscillator
+        CLK_SELECT_BEST: Auto selects the best available clock source - PLL if
+        ready, else use the Internal oscillator
         CLK_SELECT_STOP: Stops the clock and keeps timing generator in reset
-        NOTE: CLKSEL should be set to ``CLK_SELECT_BEST`` to achieve full gyroscope performance.
+        NOTE: CLKSEL should be set to ``CLK_SELECT_BEST`` to achieve full
+        gyroscope performance.
 
         +------------------------------------------+-------------------+
         | Mode                                     | Value             |
@@ -335,7 +332,7 @@ class ICM20948:
         return self._reset
 
     @reset.setter
-    def reset(self, value=1) -> None:
+    def reset(self, value: int = 1) -> None:
         self._reset = value
         sleep(1)
 
@@ -390,13 +387,13 @@ class ICM20948:
         """
         Temperature Enabled. When set to 1, this bit disables the temperature sensor.
 
-        +------------------------------------+------------------------------------------------------+
-        | Mode                               | Value                                                |
-        +====================================+======================================================+
-        | :py:const:`icm20948.TEMP_ENABLED`  | :py:const:`0b0` Temperature on                       |
-        +------------------------------------+------------------------------------------------------+
-        | :py:const:`icm20948.TEMP_DISABLED` | :py:const:`0b1` Temperature disabled                 |
-        +------------------------------------+------------------------------------------------------+
+        +------------------------------------+----------------------------------------+
+        | Mode                               | Value                                  |
+        +====================================+========================================+
+        | :py:const:`icm20948.TEMP_ENABLED`  | :py:const:`0b0` Temperature on         |
+        +------------------------------------+----------------------------------------+
+        | :py:const:`icm20948.TEMP_DISABLED` | :py:const:`0b1` Temperature disabled   |
+        +------------------------------------+----------------------------------------+
 
         """
         values = ("TEMP_DISABLED", "TEMP_ENABLED")
@@ -539,8 +536,9 @@ class ICM20948:
     @property
     def temperature(self) -> float:
         """
-        Temperature Value. In the setup tested, there is the need to read either the values from acceleration,
-        gyro and temperature or gyro and temperature at the same time in order to have a logic temperature value.
+        Temperature Value. In the setup tested, there is the need to read either the values
+        from acceleration, gyro and temperature or gyro and temperature at the same time
+        in order to have a logic temperature value.
 
         """
         return (self._raw_temp_data[3] / 333.87) + 21
@@ -720,13 +718,38 @@ class ICM20948:
             Readings immediately following setting a cutoff frequency will be
             inaccurate due to the filter "warming up"
 
+        +---------------------------------+-------------------+
+        | Mode                            | Value             |
+        +=================================+===================+
+        | :py:const:`icm20948.FREQ_246_0` | :py:const:`0b001` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_111_4` | :py:const:`0b010` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_50_4`  | :py:const:`0b011` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_23_9`  | :py:const:`0b100` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_11_5`  | :py:const:`0b101` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_5_7`   | :py:const:`0b110` |
+        +---------------------------------+-------------------+
+        | :py:const:`icm20948.FREQ_473`   | :py:const:`0b111` |
+        +---------------------------------+-------------------+
         """
-
+        values = (
+            "FREQ_246_0",
+            "FREQ_111_4",
+            "FREQ_50_4",
+            "FREQ_23_9",
+            "FREQ_11_5",
+            "FREQ_5_7",
+            "FREQ_473",
+        )
         self._user_bank = 2
         sleep(0.005)
         raw_value = self._acc_dplcfg
         self._user_bank = 0
-        return raw_value
+        return values[raw_value]
 
     @acc_dlpf_cutoff.setter
     def acc_dlpf_cutoff(self, value: int) -> None:
@@ -764,13 +787,41 @@ class ICM20948:
             Readings immediately following setting a cutoff frequency will be
             inaccurate due to the filter "warming up"
 
+        +-----------------------------------+-------------------+
+        | Mode                              | Value             |
+        +===================================+===================+
+        | :py:const:`icm20948.G_FREQ_196_6` | :py:const:`0b000` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_151_8` | :py:const:`0b001` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_119_5` | :py:const:`0b010` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_51_2`  | :py:const:`0b011` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_23_9`  | :py:const:`0b100` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_11_6`  | :py:const:`0b101` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_5_7`   | :py:const:`0b110` |
+        +-----------------------------------+-------------------+
+        | :py:const:`icm20948.G_FREQ_361_4` | :py:const:`0b111` |
+        +-----------------------------------+-------------------+
         """
-
+        values = (
+            "G_FREQ_196_6",
+            "G_FREQ_151_8",
+            "G_FREQ_119_5",
+            "G_FREQ_51_2",
+            "G_FREQ_23_9",
+            "G_FREQ_11_6",
+            "G_FREQ_5_7",
+            "G_FREQ_361_4",
+        )
         self._user_bank = 2
         sleep(0.005)
         raw_value = self._gyro_dplcfg
         self._user_bank = 0
-        return raw_value
+        return values[raw_value]
 
     @gyro_dlpf_cutoff.setter
     def gyro_dlpf_cutoff(self, value: int) -> None:

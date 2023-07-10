@@ -9,8 +9,6 @@ icm = icm20948.ICM20948(i2c)
 
 
 while True:
-    accx, accy, accz = icm.acceleration
-    gyrox, gyroy, gyroz = icm.gyro
-    print(f"x: {accx}m/s2, y: {accy},m/s2 z: {accz}m/s2")
-    print(f"x: {gyrox}°/s, y: {gyroy}°/s, z: {gyroz}°/s")
+    print(f"Temperature: {icm.temperature}°C")
+    print()
     time.sleep(1)

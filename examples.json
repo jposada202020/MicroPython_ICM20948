@@ -1,6 +1,33 @@
 {
   "urls": [
-    ["micropython_icm20948/examples/icm20948_simpletest.py", "github:jposada202020/MicroPython_ICM20948/examples/icm20948_simpletest.py"]
+    [
+      "micropython_icm20948/examples/icm20948_acc_dlpf_cutoff.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_acc_dlpf_cutoff.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_temperature.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_temperature.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_simpletest.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_simpletest.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_gyro_full_scale.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_gyro_full_scale.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_accelerometer_range.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_accelerometer_range.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_clock_select.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_clock_select.py"
+    ],
+    [
+      "micropython_icm20948/examples/icm20948_gyro_dlpf_cutoff.py",
+      "github:jposada202020/MicroPython_ICM20948/examples/icm20948_gyro_dlpf_cutoff.py"
+    ]
   ],
-  "version": "0.1"
+  "version": "1"
 }
