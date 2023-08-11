@@ -4,8 +4,11 @@ import time
 from machine import Pin, I2C
 from micropython_icm20948 import icm20948
 
-i2c = I2C(sda=Pin(8), scl=Pin(9))  # Correct I2C pins for UM FeatherS2
+i2c = I2C(1, sda=Pin(2), scl=Pin(3))
 icm = icm20948.ICM20948(i2c)
+
+_ = icm.temperature  # Dummy read to initialize the sensor
+time.sleep(0.05)
 
 
 while True:
