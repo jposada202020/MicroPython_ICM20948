@@ -411,7 +411,6 @@ class ICM20948:
         :return: Acceleration Values
         """
         raw_measurement = self._raw_accel_data
-        # sleep(0.005)
         x = (
             raw_measurement[0]
             / acc_range_sensitivity[self._memory_accel_range]
@@ -438,7 +437,6 @@ class ICM20948:
         :return: Angular velocity Values
         """
         raw_measurement = self._raw_gyro_data
-        # sleep(0.005)
         x = (
             raw_measurement[0]
             / gyro_full_scale_sensitivity[self._memory_gyro_fs]
@@ -525,10 +523,8 @@ class ICM20948:
             raise ValueError("Value must be a valid gyro_full_scale setting")
         self._user_bank = 2
         self._gyro_full_scale = value
-        # sleep(0.005)
         self._memory_gyro_fs = value
         self._user_bank = 0
-        # sleep(0.1)
 
     @property
     def temperature(self) -> float:
@@ -613,7 +609,6 @@ class ICM20948:
 
         self._user_bank = 2
         raw_rate_divisor = self._gyro_rate_divisor
-        # sleep(0.005)
         self._user_bank = 0
         return raw_rate_divisor
 
@@ -622,10 +617,8 @@ class ICM20948:
         if value not in gyro_rate_divisor_values:
             raise ValueError("Value must be a valid gyro data rate divisor setting")
         self._user_bank = 2
-        # sleep(0.005)
         self._gyro_rate_divisor = value
         self._user_bank = 0
-        # sleep(0.005)
 
     @property
     def acc_data_rate(self):
@@ -692,7 +685,6 @@ class ICM20948:
 
         self._user_bank = 2
         raw_rate_divisor = self._acc_rate_divisor
-        # sleep(0.005)
         self._user_bank = 0
         return raw_rate_divisor
 
@@ -703,10 +695,8 @@ class ICM20948:
                 "Value must be a valid acceleration data rate divisor setting"
             )
         self._user_bank = 2
-        # sleep(0.005)
         self._acc_rate_divisor = value
         self._user_bank = 0
-        # sleep(0.005)
 
     @property
     def acc_dlpf_cutoff(self) -> int:
@@ -745,9 +735,7 @@ class ICM20948:
             "FREQ_473",
         )
         self._user_bank = 2
-        # sleep(0.005)
         raw_value = self._acc_dplcfg
-        print(raw_value)
         self._user_bank = 0
         return values[raw_value - 1]
 
@@ -756,16 +744,13 @@ class ICM20948:
         if value not in acc_filter_values:
             raise ValueError("Value must be a valid dlpf setting")
         self._user_bank = 2
-        # sleep(0.005)
         self._acc_dplcfg = value
         self._user_bank = 0
-        # sleep(0.005)
 
     @property
     def acc_filter_choice(self) -> int:
         """Enables accelerometer DLPF"""
         self._user_bank = 2
-        # sleep(0.005)
         raw_value = self._acc_choice
         self._user_bank = 0
         return raw_value
@@ -773,10 +758,8 @@ class ICM20948:
     @acc_filter_choice.setter
     def acc_filter_choice(self, value: int) -> None:
         self._user_bank = 2
-        # sleep(0.005)
         self._acc_choice = value
         self._user_bank = 0
-        # sleep(0.05)
 
     @property
     def gyro_dlpf_cutoff(self) -> int:
@@ -818,7 +801,6 @@ class ICM20948:
             "G_FREQ_361_4",
         )
         self._user_bank = 2
-        # sleep(0.005)
         raw_value = self._gyro_dplcfg
         self._user_bank = 0
         return values[raw_value]
@@ -828,16 +810,13 @@ class ICM20948:
         if value not in gyro_filter_values:
             raise ValueError("Value must be a valid dlpf setting")
         self._user_bank = 2
-        # sleep(0.005)
         self._gyro_dplcfg = value
         self._user_bank = 0
-        # sleep(0.005)
 
     @property
     def gyro_filter_choice(self) -> int:
         """Enables gyro DLPF"""
         self._user_bank = 2
-        # sleep(0.005)
         raw_value = self._gyro_choice
         self._user_bank = 0
         return raw_value
@@ -845,7 +824,5 @@ class ICM20948:
     @gyro_filter_choice.setter
     def gyro_filter_choice(self, value: int) -> None:
         self._user_bank = 2
-        # sleep(0.005)
         self._gyro_choice = value
         self._user_bank = 0
-        # sleep(0.05)
